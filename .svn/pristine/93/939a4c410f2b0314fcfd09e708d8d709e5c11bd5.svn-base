@@ -1,0 +1,131 @@
+<link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+<div class="container-fluid">
+  <div class="row container ">
+    <div class="col-md-8 col-md-offset-3 box">
+      <%= form_with(model: employee, local: true) do |form| %>
+        <% if employee.errors.any? %>
+          <div id="error_explanation">
+            <h2><%= pluralize(employee.errors.count, "error") %> prohibited this employee from being saved:</h2>
+
+            <ul>
+            <% employee.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <div class="row">
+          <div class="col-md-4">
+            <%= form.label :first_name %><span style="color:red">*</span>
+            <%= form.text_field :first_name, id: :employee_first_name ,:class=>"form-control" ,:required=>true%>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :last_name %>
+            <%= form.text_field :last_name, id: :employee_last_name ,:class=>"form-control" %>
+          </div>
+         
+          <div class="col-md-4">
+            <%= form.label :mobile_number %>
+            <%= form.text_field :mobile_number, id: :employee_mobile_number ,:class=>"form-control mobile_number" %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <%= form.label :email %><span style="color:red">*</span>
+            <%= form.text_field :email, id: :employee_email ,:class=>"form-control" ,:required=>true%>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :employee_id ,"Employee ID"%>
+            <%= form.text_field :employee_id, id: :employee_employee_id ,:class=>"form-control" ,:required=>true%>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :designation %>
+            <%= form.text_field :designation, id: :employee_designation ,:class=>"form-control" %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <%= form.label :ctc %>
+            <%= form.text_field :ctc, id: :employee_ctc ,:class=>"form-control" ,:required=>true%>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :date_of_birth %>
+            <%= form.text_field :date_of_birth, id: :employee_date_of_birth ,:class=>"form-control datepicker" %>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :street %>
+            <%= form.text_field :street, id: :employee_street ,:class=>"form-control" %>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <%= form.label :pincode %>
+            <%= form.text_field :pincode, id: :employee_pincode ,:class=>"form-control mobile_number" %>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :city %>
+            <%= form.text_field :city, id: :employee_city ,:class=>"form-control" %>
+          </div>
+
+          <div class="col-md-4">
+            <%= form.label :state %>
+            <%= form.text_field :state, id: :employee_state ,:class=>"form-control" %>
+          </div>
+        </div>
+       
+        <div class="row">
+          <div class="col-md-4">
+            <%= form.label :country %>
+            <%= form.text_field :country, id: :employee_country ,:class=>"form-control" %>
+          </div>
+        </div>
+        <br>
+        
+        <div class="row">
+          <div  class="col-md-12">
+            <div  class="col-sm-9 col-sm-offset-6">
+              <%= form.submit "Submit",:class=>"btn btn-success"%>
+              <%= link_to 'Cancel', employees_path ,:class=>"btn btn-default"%>
+            </div>
+          </div>   
+        </div>
+
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  $(".mobile_number").keypress(function (e) {
+    if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+      $("#errmsg").html("Digits Only" ).show().fadeOut("slow");
+      return false;
+    }
+  });
+</script>
+
+<script type="text/javascript">
+  $(function() {
+    $(".datepicker").datepicker({
+      dateFormat : 'dd-mm-yy',
+      changeMonth : true,
+      changeYear : true,
+      yearRange: '-100y:c+nn',
+      maxDate: '-1d'
+    });
+  });   
+</script>

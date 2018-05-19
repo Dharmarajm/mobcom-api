@@ -1,0 +1,117 @@
+        
+  <section class="page-content">
+    <div class="container-fluid mrgn-top-25 mrgn-btm-30">
+     <%=form_for "change password",:url=>{:controller=>"users",:action=>"change_password_update"} do |i| %>
+          <div class="row">
+              <div class="col-md-4 form-group"><label for="oldpassword">Current Password</label>
+              <%=i.password_field :old_password, :placeholder=>"Old Password", :id=>"old_password",:required=>true,class: "fold form-control"%>
+              </div>
+          </div>
+
+          <div class="row  justify-content-md-center">
+             <div class="col-md-4 error_password"></div>
+          </div>     
+
+          <div class="new_password">           
+
+                <div class="row">
+                  <div class="col-md-4 form-group"><label for="newpassword">New Password</label>
+                    <input type="password" name="password" placeholder="New Password" id="password" class="form-control" required>
+                    <span toggle="#password" class="fa fa-fw fa-eye field-icon toggle-password"></span>                     
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-4 form-group"><label for="conpassword">Confirm Password</label>
+                    <input type="password" placeholder="Confirm Password" id="confirm_password" required class="form-control">
+                    <span toggle="#confirm_password" class="fa fa-fw fa-eye field-icon toggle-password"></span>
+                  </div>  
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6">
+                   <%=i.submit "Save" , class: "btn btn-primary btn-one" %>
+                  <%end%>
+                  </div>
+                </div>
+          </div>          
+
+          <div class="new_password"></div>  
+     </div>  
+   </section>             
+
+
+
+ <script type="text/javascript">
+    $(document).ready(function () { 
+       $(".fold").change(function () {
+        var old_pas=($(old_password).val());
+           $.ajax({
+            type: "GET",
+            url: "/users/old_password_check",
+            data: {password: old_pas},
+            dataType: 'script'
+            })
+
+              });
+        });
+    
+    </script> 
+
+  <script type="text/javascript">
+        var password = document.getElementById("password")
+        , confirm_password = document.getElementById("confirm_password");
+
+      function validatePassword(){
+        if(password.value != confirm_password.value) {
+          confirm_password.setCustomValidity("Passwords Don't Match");
+        } else {
+          confirm_password.setCustomValidity('');
+        }
+      }
+
+      password.onchange = validatePassword;
+      confirm_password.onkeyup = validatePassword;
+
+  </script>
+
+  <script type="text/javascript">
+    
+    $(".toggle-password").click(function() {
+      $(this).toggleClass("fa-eye fa-eye-slash");
+      var input = $($(this).attr("toggle"));
+      if (input.attr("type") == "password") {
+        input.attr("type", "text");
+      } else {
+        input.attr("type", "password");
+      }
+    });
+
+
+     $(".toggle-confirm_password").click(function() {
+      $(this).toggleClass("fa-eye fa-eye-slash");
+      var input = $($(this).attr("toggle"));
+      if (input.attr("type") == "confirm_password") {
+        input.attr("type", "text");
+      } else {
+        input.attr("type", "confirm_password");
+      }
+    });
+
+
+  </script>
+
+<style type="text/css">
+  .field-icon {
+  float: right;
+  margin-left: -25px;
+  margin-top: -25px;
+  position: relative;
+  z-index: 2;
+}
+
+.container{
+  padding-top:50px;
+  margin: auto;
+}
+</style>

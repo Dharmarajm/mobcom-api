@@ -1,0 +1,321 @@
+class Project < ApplicationRecord
+  belongs_to :client
+  has_many :project_employees, dependent: :destroy
+  has_many :time_sheets, dependent: :destroy
+  validates_uniqueness_of :name
+
+  def self.monthly_pdf
+    if Project.where(:status => true).present?
+      tot_data1, tot_data2, tot_data3, tot_data4 = [], [], [], []
+      @project_over_all_data = []
+      Project.where(:status => true).map do |project|
+        over_all_project_hours = []    
+        over_all_project_cost = []
+        project_hours = []
+        project_cost = []
+        if TimeSheet.where(:approval_status => true, :project_id => project["id"]).present?
+          employee_group = TimeSheet.where(:approval_status => true, :project_id => project["id"]).group_by(&:employee_id)
+          employee_group.map do |employee_id,time_sheet|
+            ctc = Employee.find(employee_id).ctc
+            time = time_sheet.pluck(:hours).sum
+            one_hour = (ctc/24)/8
+            over_all_project_hours << time
+            over_all_project_cost << (time*one_hour)
+          end 
+          if TimeSheet.where(:date => (Date.today.beginning_of_month..Date.today.end_of_month), :approval_status => true, :project_id => project["id"]).present?
+           employee_group = TimeSheet.where(:date => (Date.today.beginning_of_month..Date.today.end_of_month), :approval_status => true, :project_id => project["id"]).group_by(&:employee_id)
+            employee_group.map do |employee_id,time_sheet|
+              ctc = Employee.find(employee_id).ctc
+              time = time_sheet.pluck(:hours).sum
+              one_hour = (ctc/24)/8
+              project_hours << time
+              project_cost << (time*one_hour)
+            end 
+          else
+            project_hours << nil
+            project_cost << nil
+          end
+        end
+        data1 = project_hours.compact.sum.round == 0 ? nil : project_hours.compact.sum.round
+        data2 = project_cost.compact.sum.round == 0 ? nil : project_cost.compact.sum.round
+        data3 = over_all_project_hours.compact.sum.round == 0 ? nil : over_all_project_hours.compact.sum.round
+        data4 = over_all_project_cost.compact.sum.round == 0 ? nil : over_all_project_cost.compact.sum.round
+
+        tot_data1 << data1
+        tot_data2 << data2
+        tot_data3 << data3
+        tot_data4 << data4
+        
+        @project_over_all_data << [project["name"], data1, data2, data3, data4]
+      end
+      
+      @project_over_all_data << ["Total", tot_data1.compact.sum, tot_data2.compact.sum, tot_data3.compact.sum, tot_data4.compact.sum]
+    end
+
+    pdf = Prawn::Document.new(:left_margin => 10,:right_margin => 10,:top_margin => 1,:bottom_margin => 10)
+    pdf.font "Helvetica"
+
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+    
+    table_head = [["Projects Cost Report for the month #{Date.today.beginning_of_month.strftime('%a, %d-%b-%Y')} to #{(Date.today.end_of_month).strftime('%a, %d-%b-%Y')}"]]
+    pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 15 } do
+      cells[0, 0].borders = []
+      cells[0, 0].align = :center
+      cells[0, 0].font_style = :bold
+    end
+    
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+
+    if @project_over_all_data.present?    
+      altius_table = [["Project Name", "Hours", "Cost", "Overall Hours","Overall Cost"]]
+      pdf.table altius_table, :column_widths => { 0 => 110, 1 => 80, 2 => 80, 3 => 80, 4 =>80}, :cell_style => { :size => 10 } do
+        
+        cells[0, 0].borders = [:top, :bottom, :left, :right]
+        cells[0, 1].borders = [:top, :bottom, :left, :right]
+        cells[0, 2].borders = [:top, :bottom, :right, :left]
+        cells[0, 3].borders = [:top, :bottom, :right, :left]
+        cells[0, 4].borders = [:top, :bottom, :right, :left]
+      end
+      @project_over_all_data.map do |project_data| 
+        altius_table = [[project_data[0], project_data[1], project_data[2], project_data[3], project_data[4]]]
+        pdf.table altius_table, :column_widths => { 0 => 110, 1 => 80, 2 => 80, 3 => 80, 4 =>80}, :cell_style => { :size => 10 } do
+          
+          cells[0, 0].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].align = :right
+          cells[0, 2].borders = [:top, :bottom, :right, :left]          
+          cells[0, 2].align = :right
+          cells[0, 3].borders = [:top, :bottom, :right, :left]          
+          cells[0, 3].align = :right
+          cells[0, 4].borders = [:top, :bottom, :right, :left]          
+          cells[0, 4].align = :right
+        end
+      end
+    else
+      table_head = [["No data availble"]]
+      pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 12 } do
+        cells[0, 0].borders = []
+        cells[0, 0].align = :center
+      end      
+    end
+
+    path = "#{Rails.root}/public/monthly_project_cost_report.pdf"
+    pdf.render_file path
+    path
+    @user1={:email=> "pari.muthusamy@altiussolution.com"}
+    #@user2={:email=> "ishwarya@altiussolution.com"}
+    #@user3={:email=> "malathi.sriram@altiussolution.com"}
+    @user2={:email=> "poombavai.sivamani@altiussolution.com"}
+    #@user2={:email=> "manikandan.rajamanickam@adcltech.com"}
+    ProjectbaseMailer.project_report(@user2,path,type="monthly").deliver
+    ProjectbaseMailer.project_report(@user1,path,type="monthly").deliver
+
+  end
+
+  def self.project_pdf
+    if Project.where(:status => true).present?
+      tot_data1, tot_data2, tot_data3, tot_data4 = [], [], [], []
+      @project_over_all_data = []
+      Project.where(:status => true).map do |project|
+        over_all_project_hours = []    
+        over_all_project_cost = []
+        project_hours = []
+        project_cost = []
+        if TimeSheet.where(:approval_status => true, :project_id => project["id"]).present?
+          employee_group = TimeSheet.where(:approval_status => true, :project_id => project["id"]).group_by(&:employee_id)
+          employee_group.map do |employee_id,time_sheet|
+            ctc = Employee.find(employee_id).ctc
+            time = time_sheet.pluck(:hours).sum
+            one_hour = (ctc/24)/8
+            over_all_project_hours << time
+            over_all_project_cost << (time*one_hour)
+          end 
+          if TimeSheet.where(:date => (Date.today.beginning_of_week-1..Date.today.end_of_week-1), :approval_status => true, :project_id => project["id"]).present?
+           employee_group = TimeSheet.where(:date => (Date.today.beginning_of_week-1..Date.today.end_of_week-1), :approval_status => true, :project_id => project["id"]).group_by(&:employee_id)
+            employee_group.map do |employee_id,time_sheet|
+              ctc = Employee.find(employee_id).ctc
+              time = time_sheet.pluck(:hours).sum
+              one_hour = (ctc/24)/8
+              project_hours << time
+              project_cost << (time*one_hour)
+            end 
+          else
+            project_hours << nil
+            project_cost << nil
+          end
+        end
+        data1 = project_hours.compact.sum.round == 0 ? nil : project_hours.compact.sum.round
+        data2 = project_cost.compact.sum.round == 0 ? nil : project_cost.compact.sum.round
+        data3 = over_all_project_hours.compact.sum.round == 0 ? nil : over_all_project_hours.compact.sum.round
+        data4 = over_all_project_cost.compact.sum.round == 0 ? nil : over_all_project_cost.compact.sum.round
+
+        tot_data1 << data1
+        tot_data2 << data2
+        tot_data3 << data3
+        tot_data4 << data4
+
+        @project_over_all_data << [project["name"], data1, data2, data3, data4]
+      end
+      @project_over_all_data << ["Total", tot_data1.compact.sum, tot_data2.compact.sum, tot_data3.compact.sum, tot_data4.compact.sum]
+    end
+
+    pdf = Prawn::Document.new(:left_margin => 10,:right_margin => 10, :top_margin => 1,:bottom_margin => 10)
+    pdf.font "Helvetica"
+
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+    
+    table_head = [["Projects Cost Report for the week #{(Date.today.beginning_of_week-1).strftime('%a, %d-%b-%Y')} to #{(Date.today.end_of_week-1).strftime('%a, %d-%b-%Y')}"]]
+    pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 15 }, :position => :center do
+      cells[0, 0].borders = []
+      cells[0, 0].align = :center
+      cells[0, 0].font_style = :bold
+    end
+    
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+
+    if @project_over_all_data.present?    
+      altius_table = [["Project Name", "Hours", "Cost", "Overall Hours","Overall Cost"]]
+      pdf.table altius_table, :column_widths => { 0 => 110, 1 => 80, 2 => 80, 3 => 80, 4 =>80}, :cell_style => { :size => 10 }, :position => :center do
+        
+        cells[0, 0].borders = [:top, :bottom, :left, :right]
+        cells[0, 1].borders = [:top, :bottom, :left, :right]
+        cells[0, 2].borders = [:top, :bottom, :right, :left]
+        cells[0, 3].borders = [:top, :bottom, :right, :left]
+        cells[0, 4].borders = [:top, :bottom, :right, :left]
+      end
+      @project_over_all_data.map do |project_data| 
+        altius_table = [[project_data[0], project_data[1], project_data[2], project_data[3], project_data[4]]]
+        pdf.table altius_table, :column_widths => { 0 => 110, 1 => 80, 2 => 80, 3 => 80, 4 =>80}, :cell_style => { :size => 10 }, :position => :center do
+          
+          cells[0, 0].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].align = :right
+          cells[0, 2].borders = [:top, :bottom, :right, :left]          
+          cells[0, 2].align = :right
+          cells[0, 3].borders = [:top, :bottom, :right, :left]          
+          cells[0, 3].align = :right
+          cells[0, 4].borders = [:top, :bottom, :right, :left]          
+          cells[0, 4].align = :right
+        end
+      end
+    else
+      table_head = [["No data availble"]]
+      pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 12 }, :position => :center do
+        cells[0, 0].borders = []
+        cells[0, 0].align = :center
+      end      
+    end
+
+    path = "#{Rails.root}/public/project_cost_report.pdf"
+    pdf.render_file path
+    path
+    @user1={:email=> "pari.muthusamy@altiussolution.com"}
+    #@user2={:email=> "ishwarya@altiussolution.com"}
+    #@user3={:email=> "malathi.sriram@altiussolution.com"}
+    @user2={:email=> "poombavai.sivamani@altiussolution.com"}
+    #@user2={:email=> "manikandan.rajamanickam@adcltech.com"}
+    ProjectbaseMailer.project_report(@user2,path,type="weekly").deliver
+    ProjectbaseMailer.project_report(@user1,path,type="weekly").deliver
+  end  
+
+  def self.project_report(params)  	
+  	if params["project"]["id"].present? 
+
+  	  project = Project.find(params["project"]["id"])
+      @project_over_all_data, over_all_project_hours, over_all_project_cost, project_hours, project_cost = [], [], [], [], []
+  	  timesht = TimeSheet.where(:project_id => project["id"])
+  	  if timesht.present?
+  	    employee_group = timesht.group_by(&:employee_id)
+  	    employee_group.map do |employee_id,time_sheet|
+  	  	  ctc = Employee.find(employee_id).ctc
+  	  	  time = time_sheet.pluck(:hours).sum
+  	  	  one_hour = (ctc/24)/8
+  	  	  over_all_project_hours << time
+  	  	  over_all_project_cost << (time*one_hour)
+  	    end
+        timesheets = timesht.where(:date => params["from_date"] .. params["to_date"])
+        if timesheets.present?
+      	  employee_group = timesheets.group_by(&:employee_id)
+      	  employee_group.map do |employee_id,time_sheet|
+      	    ctc = Employee.find(employee_id).ctc
+      	    time = time_sheet.pluck(:hours).sum
+      	    one_hour = (ctc/24)/8
+      	    project_hours << time
+            project_cost << (time*one_hour)
+          end 
+        else
+      	  project_hours << 0
+          project_cost << 0 
+        end  
+      end
+
+      data1 = project_hours.compact.sum.round == 0 ? nil : project_hours.compact.sum.round
+      data2 = project_cost.compact.sum.round == 0 ? nil : project_cost.compact.sum.round
+      data3 = over_all_project_hours.compact.sum.round == 0 ? nil : over_all_project_hours.compact.sum.round
+      data4 = over_all_project_cost.compact.sum.round == 0 ? nil : over_all_project_cost.compact.sum.round
+
+      @project_over_all_data << [project["name"], data1, data2, data3, data4]
+
+  	else
+
+  	  if Project.where(:status => true).present?
+  	  	@project_over_all_data = []
+      	Project.where(:status => true).map do |project|
+          over_all_project_hours = []
+          over_all_project_cost = []
+          project_hours = []
+          project_cost = []
+          timesht = TimeSheet.where(:project_id => project["id"])
+          if timesht.present?
+            employee_group = timesht.group_by(&:employee_id)
+            employee_group.map do |employee_id,time_sheet|
+              ctc = Employee.find(employee_id).ctc
+              time = time_sheet.pluck(:hours).sum
+              one_hour = (ctc/24)/8
+              over_all_project_hours << time
+              over_all_project_cost << (time*one_hour)
+            end
+            timesheets = timesht.where(:date => params["from_date"] .. params["to_date"]) 
+            if timesheets.present?
+              employee_group = timesheets.group_by(&:employee_id)
+              employee_group.map do |employee_id,time_sheet|
+              	ctc = Employee.find(employee_id).ctc
+                time = time_sheet.pluck(:hours).sum
+                one_hour = (ctc/24)/8
+                project_hours << time
+                project_cost << (time*one_hour)
+              end 
+            else
+			        project_hours << 0
+              project_cost << 0 
+            end  
+          end
+
+          data1 = project_hours.compact.sum.round == 0 ? nil : project_hours.compact.sum.round
+          data2 = project_cost.compact.sum.round == 0 ? nil : project_cost.compact.sum.round
+          data3 = over_all_project_hours.compact.sum.round == 0 ? nil : over_all_project_hours.compact.sum.round
+          data4 = over_all_project_cost.compact.sum.round == 0 ? nil : over_all_project_cost.compact.sum.round
+
+          @project_over_all_data << [project["name"], data1, data2, data3, data4]
+          
+      	end
+      end
+
+    end
+
+    return @project_over_all_data
+  end
+
+end

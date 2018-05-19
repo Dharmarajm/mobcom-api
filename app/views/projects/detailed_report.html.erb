@@ -1,0 +1,48 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12" align="center">
+      <h3>Project Cost Detail</h3>
+    </div>
+  </div>
+  <div class="col-md-10"></div>
+  <div class="col-md-2" align="right">
+    <%= link_to 'Back', :back, :class => "btn btn-danger" %>
+  </div>
+
+  <div class="col-md-12 box">
+    <table class="table table-striped table-bordered">
+      <thead class="table_head">
+        <tr>
+          <th>Employee Name</th>
+          <th>Hours</th>
+          <th>Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% hours, cost = [], [] %>
+        <% @employee_details.each do |employee| %>
+          <tr>
+            <td><%= employee[:employee_name] %></td>
+            <td style="text-align: right">
+              <% hours << employee[:hours] %>
+              <%= employee[:hours].round %>
+            </td>
+            <td style="text-align: right">
+              <% cost << employee[:cost] %>
+              <%= employee[:cost].round %>
+            </td>
+          </tr>
+        <% end %>
+        <tr>
+          <th>Till Consumed</th>
+          <th style="text-align: right">
+            <%= hours.compact.sum.round %>
+          </th>
+          <th style="text-align: right">
+            <%= cost.compact.sum.round %>
+          </th>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

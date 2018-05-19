@@ -1,0 +1,77 @@
+<div class="container ">
+<div class="row">
+  <center><h3>Client Details</h3></center>
+</div>
+<div style="float: right;">
+  <%= link_to  'Edit', edit_client_path(@client) ,:class=>"btn btn-success" %>
+  <%= link_to 'Back', clients_path,:class=>"btn btn-danger" %>
+</div>
+
+<div class="col-md-12 box">
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr">Name </div>
+      <div><%= @client.name %></div>
+    </div>
+    <div class="col-md-6">
+      <div class="fontcolr">Street</div>
+        <div><%= @client.street %></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr"> Pin Code </div>
+      <div><%= @client.pincode %></div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="fontcolr">City </div>
+      <div><%= @client.city %></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr"> State</div>
+      <div><%= @client.state %></div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="fontcolr">Country </div>
+      <div><%= @client.country %></div>
+    </div>
+    </div>
+    
+
+
+  <table class="table">
+
+
+<%if @client.contacts.present?%>
+   <tr style="background: #286090;color:white;text-align:center">
+   <th>S.No</th>
+   <th>Name</th>
+   <th>Role</th>
+   <th>Email</th>
+   <th style="text-align: right">Mobile-No</th> 
+   <th style="text-align: right">Telephone-No</th>
+   <!--th>Edit</th> 
+   <th>Delete</th-->
+   </tr>
+   <%sno=1%>
+     <%@client.contacts.map do |contact|%>
+     <tr>
+     <td><%=sno%></td><%sno=sno+1 %>
+     <td><%=contact.name%></td>
+     <td><%=contact.designation%></td>
+     <td><%=contact.email%></td>
+     <td style="text-align: right"><%=contact.mobile_number%></td>
+     <td style="text-align: right"><%=contact.telephone_number%></td>
+    </tr>
+    <%end%>
+<%end%>
+
+
+
+
+

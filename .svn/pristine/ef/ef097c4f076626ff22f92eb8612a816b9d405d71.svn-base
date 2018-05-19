@@ -1,0 +1,76 @@
+<style>
+
+.glyphicon{
+  color: #E96E28;
+  font-size: 20px;
+}
+a{
+  text-decoration: none;
+}
+</style>
+
+<div class="container-fluid">
+  <div class="row">
+    <center><h2><b>ALTIUS PROJECT MANAGEMENT</b></h2></center>
+    <br>
+  </div>
+  <div class="row">  
+    <div class="col-md-12 ">
+
+      <div class="col-sm-6 col-sm-offset-4">
+        <div class="col-md-12">
+          <span class="glyphicon glyphicon-triangle-right"><a href="/clients">Clients</a></span>
+        </div>
+        <div class="col-md-12">
+          <span class="glyphicon glyphicon-triangle-right"><a href="/projects">Projects</a></span>
+        </div>
+        <div class="col-md-12">
+          <span class="glyphicon glyphicon-triangle-right"><a href="/employees">All&nbsp;Employees</a></span>
+        </div>
+        <div class="col-md-12">
+          <span class="glyphicon glyphicon-triangle-right"><%= link_to 'Employee Utilization Reports', employee_report_path(:data=>"dashboard")%></span>
+        </div>
+        <div class="col-md-12">
+          <span class="glyphicon glyphicon-triangle-right"><%= link_to 'Project Cost Report', project_report_path(:data=>"dashboard")%></span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+ <!--  <div class="row">
+    <div class="col-md-4">
+      <div  class="jumbotron text-center">
+        <h1><!%= Client.count%></h1>
+        <a href="/clients">Clients</a>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="jumbotron text-center">
+        <h1><!%= Project.count%></h1>
+        <a href="/Projects">Projects</a>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="jumbotron text-center">
+        <h1><!%= Employee.count%></h1>
+        <a href="/employees">Employees</a>
+      </div>
+    </div>
+  </div> -->
+
+<!--   <div class="row">
+  <br>
+    <div class="col-md-12">
+      <div class="col-sm-6 col-sm-offset-4">
+        <div class="col-md-4">
+          <!%= link_to 'Clients Reports', employee_report_path,:class=>"btn btn-primary"%>
+        </div>
+        <div class="col-md-4">
+          <!%= link_to 'Projects Reports', project_report_path,:class=>"btn btn-primary" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->

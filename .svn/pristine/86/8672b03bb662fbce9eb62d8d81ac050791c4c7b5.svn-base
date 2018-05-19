@@ -1,0 +1,31 @@
+<div class="row container ">
+<center><h3>Project Details</h3></center>
+<div style="float: left; margin-left: 190px;">
+
+<%= link_to  'Edit', edit_project_path(@project) ,:class=>"btn btn-success" %>
+<%= link_to 'Back', projects_path,:class=>"btn btn-danger" %>
+</div>
+<br>
+<div class="col-md-11 col-md-offset-2 box">
+<table class="table">
+ <tbody>
+    <tr>
+      <td class="fontcolr">Project Name </td>
+      <td><%= @project.name %></td>
+
+      </tr>
+    <tr>
+      <td class="fontcolr">Budget</td>
+      <td><%= @project.budget.to_s.gsub(/(\d+?)(?=(\d\d)+(\d)(?!\d))(\.\d+)?/, "\\1,") %></td>
+    </tr>
+    <tr>
+      <td class="fontcolr"> Client </td>
+      <td><%= @project.client.name %></td>
+    </tr>
+    
+    
+</tbody>
+</div>
+
+</div>
+

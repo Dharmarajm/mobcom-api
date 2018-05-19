@@ -1,0 +1,94 @@
+<div class="container-fluid">
+  <center><p id="notice" style="color:red;"><%= flash[:message] %></p></center>
+  <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal">Import Empolyee Details</button>  
+  <%= link_to "Sample Csv Format", clients_sample_csv_path(format: "csv") ,:class=>"btn btn-primary"%>
+  <%#= link_to 'Reports', employee_report_path, :style=>"color:#fff;float:right;margin-right:10px;",:class=>"btn btn-primary" %> &nbsp;
+  <%= link_to 'Add Employee', new_employee_path ,:style=>"color:#fff;float:right;margin-right:10px;",:class=>"btn btn-primary" %> &nbsp; 
+
+  <br>
+
+  <div class="row container-fluid" style="margin-top: 40px;">
+    <center><h3><b>Employees List<b></h3></center>
+    
+    <div class="col-md-12 box">
+      <table class="table table-striped table-bordered" id="table_id">
+        <thead class="table_head">
+          <tr>
+            <th>S_No</th>
+            <th>First name</th>
+            <th>Last name</th>
+            <th>Mobile number</th>
+            <th>Email</th>
+            <th>Employee ID</th>
+            <th>Designation</th>
+            <th>Date of birth</th>
+            <th>Action</th>
+            
+            <!-- <th>Delete</th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <% s_no=1 %>
+          <% @employees.each do |employee| %>
+            <tr>
+              <td style="text-align:right;"><%=s_no%></td>
+              <td><%= employee.first_name %></td>
+              <td><%= employee.last_name %></td>
+              <td style="text-align:right;"><%= employee.mobile_number %></td>
+              <td><%= employee.email %></td>
+              <td><%= employee.employee_id %></td>
+              <td><%= employee.designation %></td>
+              <td style="text-align:center;"><%= employee.date_of_birth %></td>
+              <td><center><%= link_to 'View', employee %>&nbsp;|&nbsp;<%= link_to 'Edit', edit_employee_path(employee) %></center></td>
+              <!-- <td><center><!%= link_to '', employee, method: :delete, data: { confirm: 'Are you sure?' },:class=>"fa fa-trash-o" %></center></td> -->
+            </tr>
+            <% s_no += 1 %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: #286090;color: white;height:55px;">
+        <center><h4 class="modal-title" id="exampleModalLabel">Import Contacts for Company</h4></center>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <%= form_for Employee.new,:url=>{:controller=>"employees",:action=>"import_employee"} do |i| %>
+          Select File : <%= i.file_field :address,required:true,:class=>"form-control",:id=>"browse" %>
+      </div>
+      <div class="modal-footer">
+        <%= i.submit "Upload", :class=>"btn btn-primary"%>
+        <% end %>
+        <label class="btn btn-secondary" data-dismiss="modal">Cancel</label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  document.getElementById("browse").onchange = function() {
+    var fileName = this.value;
+    var fileExten = fileName.substr(fileName.length - 4);
+    var fileExtension=fileExten.toLowerCase()
+    if (fileExtension == ".csv") {
+        //alert("That ain't no .csv file!");
+    }
+    else if (fileExtension == ".xls"){
+
+    }
+    else if (fileExtension == ".xlsx"){
+    }
+    else {
+     alert("Only accept CSV or XLS"); 
+    }
+    }
+
+}
+</script>

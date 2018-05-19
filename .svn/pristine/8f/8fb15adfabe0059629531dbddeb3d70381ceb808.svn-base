@@ -1,0 +1,3 @@
+Projectbase#report
+
+<%= @greeting %>, find me in app/views/projectbase_mailer/report.text.erb

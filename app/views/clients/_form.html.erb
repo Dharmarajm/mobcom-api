@@ -1,0 +1,159 @@
+<div class="container-fluid">
+  
+<div class="container ">
+
+    <div class="box">
+
+
+<%= nested_form_for client do |form| %>
+  <% if client.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(client.errors.count, "error") %> prohibited this client from being saved:</h2>
+
+      <ul>
+      <% client.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="row">
+  <div class="col-md-6">
+    <%= form.label :name %><span style="color:red">*</span>
+    <%= form.text_field :name, id: :client_name  ,:class=>"form-control",required:true%>
+  </div>
+
+  <div class="col-md-6">
+    <%= form.label :street %>
+    <%= form.text_field :street, id: :client_street  ,:class=>"form-control" %>
+  </div>
+  </div>
+
+  <div class="row">
+  <div class="col-md-6">
+    <%= form.label :pincode %>
+    <%= form.text_field :pincode, id: :client_pincode  ,:class=>"form-control mobile_number"%>
+  </div>
+
+  <div class="col-md-6">
+    <%= form.label :city %>
+    <%= form.text_field :city, id: :client_city  ,:class=>"form-control"%>
+  </div>
+  </div>
+
+  <div class="row">
+  <div class="col-md-6">
+    <%= form.label :state %>
+    <%= form.text_field :state, id: :client_state  ,:class=>"form-control"%>
+  </div>
+
+  <div class="col-md-6">
+    <%= form.label :country %>
+    <%= form.text_field :country, id: :client_country  ,:class=>"form-control"%>
+  </div>
+</div>
+
+<%= form.fields_for :contacts, validate:true do |task_form| %>
+
+  <div style="text-align:center;color:red;" id="errmsg">
+    </div> 
+
+<div class="row">
+<!-- <div class="box">
+ -->
+  <br>
+     <div class="col-md-2">
+       <!--%= task_form.label :name %-->
+
+       <%= task_form.text_field :name, :class=>"form-control" ,required:true, placeholder: "name"%>
+    </div>
+    
+    <div class="col-md-2">
+       <!--%= task_form.label :designation %-->
+
+       <%= task_form.text_field :designation, :class=>"form-control" ,required:true, placeholder: "role"%>
+    </div>
+     
+     <div class="col-md-2">
+       <!--%= task_form.label :email %-->
+
+       <%= task_form.text_field :email, :class=>"form-control ", placeholder: "email" %>
+    </div>
+
+    <div class="col-md-2">
+       <!--%= task_form.label :telephone_number,"Telephone-no" %-->
+
+       <%= task_form.text_field :mobile_number,:class=>"form-control mobile_number" ,required:true , placeholder: "mobile-no"%>
+    </div>
+ 
+
+     <div class="col-md-2">
+       <!--%= task_form.label :mobile_number,"Mobile-no" %-->
+
+       <%= task_form.text_field :telephone_number,:class=>"form-control mobile_number", placeholder: "teleph-no" %>
+    </div>
+
+    <div id="errmsg">
+    </div>
+     
+    <div class="col-md-2">
+       <%= task_form.link_to_remove "<i class 'fa fa-trash-o'></i>".html_safe,:class=>"btn btn-danger fa fa-trash-o" ,title:"Remove"%>
+      <!--%= task_form.link_to_remove "<i class 'fa fa-trash-o'></i>".html_safe, :class=>"btn btn-danger"%-->
+     </div>
+    
+<!--   </div>  
+ -->  </div>
+<% end %>
+
+<br>
+
+<div class="row">
+      <div  class="col-md-12"> <%= form.link_to_add "Add a Contact", :contacts,:class=>"btn btn-primary", :style=>"margin-top: 20px;"%></div>
+         <div class="col-md-2 col-md-offset-9">
+         <%= form.submit  :class=>"btn btn-success"%>
+         </div>
+      <!--/div-->
+</div>
+<% end %>
+
+</div>
+</div>
+</div>
+
+<script type="text/javascript">
+
+$(document).on('nested:fieldAdded', function(event){
+ 
+  var field = event.field;
+  var IField = field.find('.mobile_number');
+  var IsField = field.find('.tele_number');
+
+ $(".mobile_number").keypress(function (e) {
+      
+     
+     if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+     
+        $("#errmsg").html("Digits Only" ).show().fadeOut("slow");
+               return false;
+       }
+     });
+  })
+
+
+</script>
+
+
+
+<script type="text/javascript">
+  $(".mobile_number").keypress(function (e) {
+  
+     
+     if (e.which != 8 && e.which != 0 && (e.which < 48 || e.which > 57)) {
+     
+        //$("#errmsg").html("Digits Only" ).show().fadeOut("slow");
+               return false;
+       }
+     });
+ 
+</script>

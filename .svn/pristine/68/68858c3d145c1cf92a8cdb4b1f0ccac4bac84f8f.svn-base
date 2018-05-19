@@ -1,0 +1,8 @@
+
+
+<center><h3>New Employee</h3></center>
+
+
+<%= render 'form', employee: @employee %>
+
+

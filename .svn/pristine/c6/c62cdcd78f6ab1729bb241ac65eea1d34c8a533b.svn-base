@@ -1,0 +1,10 @@
+
+<center><h3>Editing Employee</h3></center>
+
+<div style="float: left; margin-left: 300px;">
+
+<%= link_to 'Show', @employee ,:class=>"btn btn-primary" %>
+<%= link_to 'Back', employees_path ,:class=>"btn btn-danger" %>
+
+</div>
+<%= render 'form', employee: @employee %>

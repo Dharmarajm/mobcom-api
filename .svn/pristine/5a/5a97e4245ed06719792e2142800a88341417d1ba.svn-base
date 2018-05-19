@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Altius Project Management</title>
+  <link href="/assets/altius-log.jpg" rel="shortcut icon" type="image/x-icon" style="border-radius: 100%;"/>
+  <%= csrf_meta_tags %>
+  <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+  <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.4/css/jquery.dataTables.min.css">
+
+<!--   <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+  <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+ -->
+</head>
+<body> 
+
+  <nav class="navbar navbar-inverse">
+    <div class="container-fluid">
+      <div class="navbar-header">
+        <a href="/clients/dashboard">
+          <img src="/assets/altius-log.jpg" style="width: 7%;border-radius: 55%;">
+        </a>
+      </div>
+      <ul class="nav navbar-nav">
+      <!--  
+       <li class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="/clients">Client
+          <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="/clients">All Client</a></li>
+            <li><a><!%= link_to 'Reports', employee_report_path %></a></li>
+          </ul>
+        </li>
+
+        <li class="dropdown">
+          <a class="dropdown-toggle" data-toggle="dropdown" href="/clients">Projects
+          <span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <li><a href="/Projects">All Projects</a></li>
+            <li><a><!%= link_to 'Reports', project_report_path %></a></li>
+          </ul>
+        </li> -->
+        
+        <li><a href="/clients/dashboard"><b style="color: #fff;font-size: 16px;">Dashboard</b></a></li>
+
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="/users/change_password"><span class="glyphicon glyphicon-user"></span> Change Password</a></li>
+        <li><a href="/logout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+  
+  <%= yield %>
+
+  <style type="text/css">
+    .navbar-inverse {
+      background-color: #286090!important;
+      border-color: #286090!important;
+    }
+    .navbar-inverse .navbar-nav > li > a {
+      color: #e1dede!important;
+    }
+    .box {
+      box-shadow: 0px 1px 4px 3px #286090;
+      padding: 16px;
+    }
+    .table_head {
+      background-color: #286090;
+      color:#fff;
+    }
+    .fontcolr {
+      font-size: 20px;
+      font-family: bold;
+    }
+    .col-md-offset-10 {
+      margin-left: 80.333%;
+    }
+    .fade.show{
+      opacity: 1;
+    }
+    .container{
+      margin-top: 50px;
+    }
+  </style>
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+      $('#table_id').dataTable({
+        "iDisplayLength": 100
+      });
+    });
+  </script>
+
+</body>
+</html>

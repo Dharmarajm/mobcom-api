@@ -1,0 +1,43 @@
+<div class="container-fluid">
+  <%= link_to 'Add Client', new_client_path ,:style=>"color:#fff;float:right;margin-right:10px;",:class=>"btn btn-primary" %>
+  <br>
+
+  <div class="row container-fluid " style="margin-top: 40px;">
+    <center><h3><b>Clients<b></h3></center>
+    
+    <div class="col-md-12 box">
+      <table class="table table-striped table-bordered" id="table_id">
+        <thead class="table_head">
+          <tr>
+            <th>S_no</th>
+            <th>Name</th>
+            <th>Street</th>
+            <th>Pincode</th>
+            <th>City</th>
+            <th>State</th>
+            <th>Country</th>
+            <th>Action</th>
+            <!-- <th>Delete</th> -->
+          </tr>
+        </thead>
+        <tbody>
+          <% s=1 %>
+          <% @clients.each do |client| %>
+            <tr>
+              <td style="text-align:right;"><%= s%></td>
+              <td><%= client.name %></td>
+              <td><%= client.street %></td>
+              <td style="text-align:right;"><%= client.pincode %></td>
+              <td><%= client.city %></td>
+              <td><%= client.state %></td>
+              <td><%= client.country %></td>
+              <td><%= link_to 'View', client %>&nbsp;|&nbsp;<%= link_to 'Edit', edit_client_path(client) %></td>
+              <!-- <td><center><!%= link_to '', client, method: :delete, data: { confirm: 'Are you sure?' },:class=>"fa fa-trash-o" %></center></td> -->
+            </tr>
+            <% s +=1 %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

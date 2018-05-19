@@ -1,0 +1,3 @@
+Employeebase#report
+
+<%= @greeting %>, find me in app/views/employeebase_mailer/report.text.erb

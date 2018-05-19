@@ -1,0 +1,527 @@
+class Employee < ApplicationRecord
+  require 'carrierwave'
+  require 'csv'
+  require 'activerecord-import'
+  require 'rubygems'
+  require 'roo'
+  require 'spreadsheet'
+  mount_uploader :image, AvatarUploader
+  has_many :project_employees, dependent: :destroy
+  has_many :time_sheets, dependent: :destroy
+  has_one :user, dependent: :destroy
+  validates_uniqueness_of :email
+  validates_length_of :mobile_number,:in => 10..10, :on => :create
+  validates :email, uniqueness: { case_sensitive: false}, length: { in: 6..100 }
+  validates_format_of :email, :with => /\A[^@]+@([^@\.]+\.)+[^@\.]+\z/
+
+  def self.import_data(params)
+
+    extn=File.extname(params["employee"]["address"].tempfile)
+    extn=extn.downcase
+    if extn == ".xlsx"
+       file = Roo::Spreadsheet.open(params["employee"]["address"].tempfile)
+       file = file.sheet(file.sheets.first)
+       rows = file.map { |e| e }
+    elsif extn == ".xls"
+       file=Spreadsheet.open(params["employee"]["address"].tempfile)
+       rows=file.worksheet(0).map{|kk| kk}
+    elsif extn == ".csv"   
+       rows=File.open(params["employee"]["address"].tempfile,"r").collect{|i| i.chomp.split(",")}     
+    else
+       return "Invalid File"   
+    end   
+    headers = rows.shift.count  
+    if headers == 13
+      array = []
+      rows.map do |i| 
+        array << i[3]
+      end
+      if Employee.where(email: array.compact).present?
+        email = Employee.where(email: array.compact).pluck(:email)
+        array = array.join(",")
+        return "File Is Invalid ,"" #{email} "" Contains invalid data"
+      else
+        rows.map do |i| 
+          Employee.create(first_name: i[0], last_name: i[1], mobile_number: i[2].to_s.split(".")[0], email: i[3], employee_id: i[4], designation: i[5], ctc: i[6], date_of_birth: i[7], street: i[8], pincode: i[9], city: i[10], state: i[11], country: i[12])
+        end   
+        return "File Is Successfully Uploaded"        
+      end   
+    else
+      return "Invalid Headers"
+    end  	
+  end
+
+  def self.employee_report(params)
+    employee_id = params["employee_id"]
+    status = params["approval_status"]
+    if status == "All" or status.nil?
+      approval_status = [true, false, nil]
+    elsif status == "Approved"
+      approval_status = true
+    else
+      approval_status = [false, nil]
+    end
+    if employee_id.present?
+      fromdate = params["from_date"]
+      todate = params["to_date"]
+      @employee_data = []
+      emp_id = employee_id
+      @emp_data = []
+      @emp_data << Employee.find(emp_id).first_name
+      date_wise_data = []
+      (fromdate.to_date..todate.to_date).to_a.map do |date|
+        time_sht = TimeSheet.where(date: date, employee_id: emp_id)
+        if time_sht.present?
+          if time_sht.pluck(:attendance_log).include?(false)
+            emp_hours = "A"
+            emp_cost = "A"
+          else
+            emp_hours = time_sht.where(approval_status: approval_status).pluck(:hours).compact.sum.round
+            ctc = Employee.find(emp_id).ctc
+            one_hour = (ctc/24)/8
+            emp_cost = emp_hours * one_hour
+          end
+        else
+          emp_hours = ""
+          emp_cost = ""
+        end
+        date_wise_data << [date,emp_hours,emp_cost]
+      end
+      @emp_data << date_wise_data
+      @employee_data << @emp_data
+    else
+      @employee_data = []
+      fromdate = params[:from_date]
+      todate = params[:to_date]
+      employee_id = ProjectEmployee.pluck(:employee_id).uniq      
+      employee_id.map do |emp_id|
+        @emp_data = []
+        @emp_data << Employee.find(emp_id).first_name
+        date_wise_data = []
+        (fromdate.to_date..todate.to_date).to_a.map do |date|
+          time_sht = TimeSheet.where(date: date, employee_id: emp_id)
+          if time_sht.present?
+            if time_sht.pluck(:attendance_log).include?(false)
+              emp_hours = "A"
+              emp_cost = "A"
+            else
+              emp_hours = time_sht.where(approval_status: approval_status).pluck(:hours).compact.sum.round
+              ctc = Employee.find(emp_id).ctc
+              one_hour = (ctc/24)/8
+              emp_cost = emp_hours * one_hour
+            end
+          else
+            emp_hours = ""
+            emp_cost = ""
+          end
+          date_wise_data << [date,emp_hours,emp_cost]
+        end
+        @emp_data << date_wise_data
+        @employee_data << @emp_data
+      end
+    end
+    return @employee_data, fromdate, todate
+  end
+
+  def self.employee_not_entered_timesheet
+    admin_id =Role.find_by_name("Admin").id
+    all_employees = User.where.not(role_id: admin_id).pluck(:employee_id).uniq
+    if TimeSheet.where(date: Date.today).present?      
+      employee_ids = TimeSheet.where(date: Date.today).pluck(:employee_id).uniq
+      emp_ids = all_employees-employee_ids
+      email_ids = Employee.where(id: emp_ids).pluck(:email)
+    else
+      email_ids = Employee.where(id: all_employees).pluck(:email)
+    end
+    unless email_ids.empty?
+      email_ids.map do |email|
+        DailyMailer.notification(email).deliver
+      end
+    end    
+  end
+
+  def self.employee_pdf
+    if ProjectEmployee.present?
+      @employee_data = []
+      employee_id = ProjectEmployee.pluck(:employee_id).uniq
+      employee_id.map do |emp_id|
+        @emp_data = []
+        @emp_data << Employee.find(emp_id).first_name
+        date_wise_data = []
+        (Date.today.beginning_of_week-1..Date.today.end_of_week-1).map do |date|
+          time_sht = TimeSheet.where(date: date, employee_id: emp_id, approval_status: true)
+          if time_sht.present?
+            if time_sht.pluck(:attendance_log).include?(false)
+              emp_hours = "A"
+              emp_cost = "A"
+            else
+              emp_hours = time_sht.pluck(:hours).compact.sum.round
+              ctc = Employee.find(emp_id).ctc
+              one_hour = (ctc/24)/8
+              emp_cost = emp_hours  * one_hour
+            end
+          else
+            emp_hours = ""
+            emp_cost = ""
+          end
+          date_wise_data << [date, emp_hours, emp_cost]
+        end
+        @emp_data << date_wise_data
+        @employee_data << @emp_data
+      end
+    end
+
+    pdf = Prawn::Document.new(:left_margin => 10,:right_margin => 10,:top_margin => 1,:bottom_margin => 10)
+    pdf.font "Helvetica"
+
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+    
+    table_head = [["Employee Utilization Report for the week #{(Date.today.beginning_of_week-1).strftime('%a, %d-%b-%Y')} to #{(Date.today.end_of_week-1).strftime('%a, %d-%b-%Y')}"]]
+    pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 15 } do
+      cells[0, 0].borders = []
+      cells[0, 0].align = :center
+      cells[0, 0].font_style = :bold
+    end
+    
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+
+    if @employee_data.compact.present?
+      dates = ((Date.today.beginning_of_week-1)..Date.today.end_of_week-1).map { |e| e.to_date.strftime("%d-%b").to_s }
+      altius_table1 = [["Employee Name", "#{dates[0]}", "#{dates[1]}", "#{dates[2]}", "#{dates[3]}", "#{dates[4]}", "#{dates[5]}", "#{dates[6]}"]]
+      pdf.table altius_table1, :column_widths => { 0 => 100, 1 => 70, 2 => 70, 3 => 70, 4 =>70, 5=> 70, 6=> 70, 7 => 70}, :cell_style => { :size => 12 } do
+        
+        cells[0, 0].borders = [:top, :bottom, :left, :right]
+        cells[0, 0].align = :center
+        cells[0, 1].borders = [:top, :bottom, :left, :right]
+        cells[0, 1].align = :center
+        cells[0, 2].borders = [:top, :bottom, :right, :left]
+        cells[0, 2].align = :center
+        cells[0, 3].borders = [:top, :bottom, :right, :left]
+        cells[0, 3].align = :center
+        cells[0, 4].borders = [:top, :bottom, :right, :left]
+        cells[0, 4].align = :center
+        cells[0, 5].borders = [:top, :bottom, :right, :left]
+        cells[0, 5].align = :center
+        cells[0, 6].borders = [:top, :bottom, :right, :left]
+        cells[0, 6].align = :center
+        cells[0, 7].borders = [:top, :bottom, :right, :left]
+        cells[0, 7].align = :center
+      end
+  
+      @employee_data.map do |employee|
+
+        altius_table1 = [[employee[0], employee[1][0][1], employee[1][1][1], employee[1][2][1], employee[1][3][1], employee[1][4][1], employee[1][5][1], employee[1][6][1]]]
+        pdf.table altius_table1, :column_widths => { 0 => 100, 1 => 70, 2 => 70, 3 => 70, 4 =>70, 5=> 70, 6=> 70, 7 => 70}, :cell_style => { :size => 10 } do
+
+          cells[0, 0].borders = [:top, :bottom, :left, :right]          
+          cells[0, 1].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].align = :right
+          cells[0, 2].borders = [:top, :bottom, :right, :left]
+          cells[0, 2].align = :right
+          cells[0, 3].borders = [:top, :bottom, :right, :left]
+          cells[0, 3].align = :right
+          cells[0, 4].borders = [:top, :bottom, :right, :left]
+          cells[0, 4].align = :right
+          cells[0, 5].borders = [:top, :bottom, :right, :left]
+          cells[0, 5].align = :right
+          cells[0, 6].borders = [:top, :bottom, :right, :left]
+          cells[0, 6].align = :right
+          cells[0, 7].borders = [:top, :bottom, :right, :left]
+          cells[0, 7].align = :right
+        end  
+      end
+
+    else
+      table_head = [["No data availble"]]
+      pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 12 } do
+        cells[0, 0].borders = []
+        cells[0, 0].align = :center
+      end         
+  
+    end
+
+    path = "#{Rails.root}/public/employee_utilization_report.pdf"
+    pdf.render_file path
+    path
+    @user1={:email=> "pari.muthusamy@altiussolution.com"}
+    #@user2={:email=> "ishwarya@altiussolution.com"}
+    #@user3={:email=> "malathi.sriram@altiussolution.com"}
+    @user2={:email=> "poombavai.sivamani@altiussolution.com"}    
+    #@user2={:email=> "manikandan.rajamanickam@adcltech.com"}
+    ProjectbaseMailer.report(@user2,path,type="weekly").deliver
+    ProjectbaseMailer.report(@user1,path,type="weekly").deliver
+
+  end  
+
+  def self.monthly_pdf
+    if ProjectEmployee.present?
+      @employee_data = []
+      employee_id = ProjectEmployee.pluck(:employee_id).uniq
+      employee_id.map do |emp_id|
+        @emp_data = []
+        @emp_data << Employee.find(emp_id).first_name
+        date_wise_data = []
+        (Date.yesterday.beginning_of_month..Date.yesterday.end_of_month).map do |date|
+          time_sht = TimeSheet.where(date: date, employee_id: emp_id, approval_status: true)
+          if time_sht.present?
+            if time_sht.pluck(:attendance_log).include?(false)
+              emp_hours = "A"
+              emp_cost = "A"
+            else
+              emp_hours = time_sht.pluck(:hours).compact.sum.round
+              ctc = Employee.find(emp_id).ctc
+              one_hour = (ctc/24)/8
+              emp_cost = emp_hours  * one_hour
+            end
+          else
+            emp_hours = ""
+            emp_cost = ""
+          end
+          date_wise_data << [date, emp_hours, emp_cost]
+        end
+        @emp_data << date_wise_data
+        @employee_data << @emp_data
+      end
+    end
+
+    pdf = Prawn::Document.new(:left_margin => 10,:right_margin => 10,:top_margin => 1,:bottom_margin => 10)
+    pdf.font "Helvetica"
+
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+    
+    table_head = [["Employee Utilization Report for the month #{Date.yesterday.beginning_of_month.strftime('%a, %d-%b-%Y')} to #{Date.yesterday.end_of_month.strftime('%a, %d-%b-%Y')}"]]
+    pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 15 } do
+      cells[0, 0].borders = []
+      cells[0, 0].align = :center
+      cells[0, 0].font_style = :bold
+    end
+    
+    table_head = [[""]]
+    pdf.table table_head, :column_widths => { 0 => 590} do
+      cells[0, 0].borders = []
+    end
+
+    if @employee_data.compact.present?
+
+      days = []
+      ((Date.yesterday.beginning_of_month.to_date .. Date.yesterday.end_of_month.to_date).to_a).map do |date|
+        #unless date.wday == 0
+          days << date.strftime("%d")
+        #end        
+      end
+        
+      days = days.each_slice(days.count/2).to_a
+      if days.count.odd?
+        days1 = days[0]
+        days2 = (days[1]<<days[2]).flatten
+      else
+        days1 = days[0]
+        days2 = days[1]
+      end
+
+      altius_table1 = [["Employee Name", "#{days1[0]}", "#{days1[1]}", "#{days1[2]}", "#{days1[3]}", "#{days1[4]}", "#{days1[5]}", "#{days1[6]}", "#{days1[7]}", "#{days1[8]}", "#{days1[9]}", "#{days1[10]}", "#{days1[11]}", "#{days1[12]}", "#{days1[13]}", "#{days1[14]}"]]
+
+      pdf.table altius_table1, :column_widths => { 0 => 110, 1 => 32, 2 => 32, 3 => 32, 4 => 32, 5=> 32, 6=> 32, 7 => 32, 8 => 32, 9 => 32, 10 => 32, 11 => 32, 12 => 32, 13 => 32, 14 => 32, 15 => 32}, :cell_style => { :size => 12 } do
+        
+        cells[0, 0].borders = [:top, :bottom, :left, :right]
+        cells[0, 0].align = :center
+        cells[0, 1].borders = [:top, :bottom, :left, :right]
+        cells[0, 1].align = :center
+        cells[0, 2].borders = [:top, :bottom, :right, :left]
+        cells[0, 2].align = :center
+        cells[0, 3].borders = [:top, :bottom, :right, :left]
+        cells[0, 3].align = :center
+        cells[0, 4].borders = [:top, :bottom, :right, :left]
+        cells[0, 4].align = :center
+        cells[0, 5].borders = [:top, :bottom, :right, :left]
+        cells[0, 5].align = :center
+        cells[0, 6].borders = [:top, :bottom, :right, :left]
+        cells[0, 6].align = :center
+        cells[0, 7].borders = [:top, :bottom, :right, :left]
+        cells[0, 7].align = :center
+        cells[0, 8].borders = [:top, :bottom, :right, :left]
+        cells[0, 8].align = :center
+        cells[0, 9].borders = [:top, :bottom, :right, :left]
+        cells[0, 9].align = :center
+        cells[0, 10].borders = [:top, :bottom, :right, :left]
+        cells[0, 10].align = :center
+        cells[0, 11].borders = [:top, :bottom, :right, :left]
+        cells[0, 11].align = :center
+        cells[0, 12].borders = [:top, :bottom, :right, :left]
+        cells[0, 12].align = :center
+        cells[0, 13].borders = [:top, :bottom, :right, :left]
+        cells[0, 13].align = :center
+        cells[0, 14].borders = [:top, :bottom, :right, :left]
+        cells[0, 14].align = :center
+        cells[0, 15].borders = [:top, :bottom, :right, :left]
+        cells[0, 15].align = :center
+      end
+  
+      @employee_data.map do |employee|
+
+        altius_table1 = [[employee[0], employee[1][0][1], employee[1][1][1], employee[1][2][1], employee[1][3][1], employee[1][4][1], employee[1][5][1], employee[1][6][1], employee[1][7][1], employee[1][8][1], employee[1][9][1], employee[1][10][1], employee[1][11][1], employee[1][12][1], employee[1][13][1], employee[1][14][1]]]
+
+        pdf.table altius_table1, :column_widths => { 0 => 110, 1 => 32, 2 => 32, 3 => 32, 4 => 32, 5=> 32, 6=> 32, 7 => 32, 8 => 32, 9 => 32, 10 => 32, 11 => 32, 12 => 32, 13 => 32, 14 => 32, 15 => 32}, :cell_style => { :size => 10 } do
+
+          cells[0, 0].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].align = :right
+          cells[0, 2].borders = [:top, :bottom, :right, :left]
+          cells[0, 2].align = :right
+          cells[0, 3].borders = [:top, :bottom, :right, :left]
+          cells[0, 3].align = :right
+          cells[0, 4].borders = [:top, :bottom, :right, :left]
+          cells[0, 4].align = :right
+          cells[0, 5].borders = [:top, :bottom, :right, :left]
+          cells[0, 5].align = :right
+          cells[0, 6].borders = [:top, :bottom, :right, :left]
+          cells[0, 6].align = :right
+          cells[0, 7].borders = [:top, :bottom, :right, :left]
+          cells[0, 7].align = :right
+          cells[0, 8].borders = [:top, :bottom, :right, :left]
+          cells[0, 8].align = :right
+          cells[0, 9].borders = [:top, :bottom, :right, :left]
+          cells[0, 9].align = :right
+          cells[0, 10].borders = [:top, :bottom, :right, :left]
+          cells[0, 10].align = :right
+          cells[0, 11].borders = [:top, :bottom, :right, :left]
+          cells[0, 11].align = :right
+          cells[0, 12].borders = [:top, :bottom, :right, :left]
+          cells[0, 12].align = :right
+          cells[0, 13].borders = [:top, :bottom, :right, :left]
+          cells[0, 13].align = :right
+          cells[0, 14].borders = [:top, :bottom, :right, :left]
+          cells[0, 14].align = :right
+          cells[0, 15].borders = [:top, :bottom, :right, :left]
+          cells[0, 15].align = :right
+        end  
+      end
+
+      pdf.start_new_page
+
+      table_head = [[""]]
+      pdf.table table_head, :column_widths => { 0 => 590} do
+        cells[0, 0].borders = []
+      end
+    
+      table_head = [["Employee Utilization Report for the month #{Date.yesterday.beginning_of_month.strftime('%a, %d-%b-%Y')} to #{Date.yesterday.end_of_month.strftime('%a, %d-%b-%Y')}"]]
+      pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 15 } do
+        cells[0, 0].borders = []
+        cells[0, 0].align = :center
+        cells[0, 0].font_style = :bold
+      end
+      
+      table_head = [[""]]
+      pdf.table table_head, :column_widths => { 0 => 590} do
+        cells[0, 0].borders = []
+      end
+
+      altius_table1 = [["Employee Name", "#{days2[0]}", "#{days2[1]}", "#{days2[2]}", "#{days2[3]}", "#{days2[4]}", "#{days2[5]}", "#{days2[6]}", "#{days2[7]}", "#{days2[8]}", "#{days2[9]}", "#{days2[10]}", "#{days2[11]}", "#{days2[12]}", "#{days2[13]}", "#{days2[14]}"]]
+
+      pdf.table altius_table1, :column_widths => { 0 => 110, 1 => 32, 2 => 32, 3 => 32, 4 => 32, 5=> 32, 6=> 32, 7 => 32, 8 => 32, 9 => 32, 10 => 32, 11 => 32, 12 => 32, 13 => 32, 14 => 32, 15 => 32}, :cell_style => { :size => 12 } do
+        
+        cells[0, 0].borders = [:top, :bottom, :left, :right]
+        cells[0, 0].align = :center
+        cells[0, 1].borders = [:top, :bottom, :left, :right]
+        cells[0, 1].align = :center
+        cells[0, 2].borders = [:top, :bottom, :right, :left]
+        cells[0, 2].align = :center
+        cells[0, 3].borders = [:top, :bottom, :right, :left]
+        cells[0, 3].align = :center
+        cells[0, 4].borders = [:top, :bottom, :right, :left]
+        cells[0, 4].align = :center
+        cells[0, 5].borders = [:top, :bottom, :right, :left]
+        cells[0, 5].align = :center
+        cells[0, 6].borders = [:top, :bottom, :right, :left]
+        cells[0, 6].align = :center
+        cells[0, 7].borders = [:top, :bottom, :right, :left]
+        cells[0, 7].align = :center
+        cells[0, 8].borders = [:top, :bottom, :right, :left]
+        cells[0, 8].align = :center
+        cells[0, 9].borders = [:top, :bottom, :right, :left]
+        cells[0, 9].align = :center
+        cells[0, 10].borders = [:top, :bottom, :right, :left]
+        cells[0, 10].align = :center
+        cells[0, 11].borders = [:top, :bottom, :right, :left]
+        cells[0, 11].align = :center
+        cells[0, 12].borders = [:top, :bottom, :right, :left]
+        cells[0, 12].align = :center
+        cells[0, 13].borders = [:top, :bottom, :right, :left]
+        cells[0, 13].align = :center
+        cells[0, 14].borders = [:top, :bottom, :right, :left]
+        cells[0, 14].align = :center
+        cells[0, 15].borders = [:top, :bottom, :right, :left]
+        cells[0, 15].align = :center
+      end
+  
+      @employee_data.map do |employee|
+
+        altius_table1 = [[employee[0], employee[1][15][1], employee[1][16][1], employee[1][17][1], employee[1][18][1], employee[1][19][1], employee[1][20][1], employee[1][21][1], employee[1][22][1], employee[1][23][1], employee[1][24][1], employee[1][25][1], employee[1][26][1], employee[1][27][1], employee[1][28][1], employee[1][29][1]]]
+
+        pdf.table altius_table1, :column_widths => { 0 => 110, 1 => 32, 2 => 32, 3 => 32, 4 => 32, 5=> 32, 6=> 32, 7 => 32, 8 => 32, 9 => 32, 10 => 32, 11 => 32, 12 => 32, 13 => 32, 14 => 32, 15 => 32}, :cell_style => { :size => 10 } do
+
+          cells[0, 0].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].borders = [:top, :bottom, :left, :right]
+          cells[0, 1].align = :right
+          cells[0, 2].borders = [:top, :bottom, :right, :left]
+          cells[0, 2].align = :right
+          cells[0, 3].borders = [:top, :bottom, :right, :left]
+          cells[0, 3].align = :right
+          cells[0, 4].borders = [:top, :bottom, :right, :left]
+          cells[0, 4].align = :right
+          cells[0, 5].borders = [:top, :bottom, :right, :left]
+          cells[0, 5].align = :right
+          cells[0, 6].borders = [:top, :bottom, :right, :left]
+          cells[0, 6].align = :right
+          cells[0, 7].borders = [:top, :bottom, :right, :left]
+          cells[0, 7].align = :right
+          cells[0, 8].borders = [:top, :bottom, :right, :left]
+          cells[0, 8].align = :right
+          cells[0, 9].borders = [:top, :bottom, :right, :left]
+          cells[0, 9].align = :right
+          cells[0, 10].borders = [:top, :bottom, :right, :left]
+          cells[0, 10].align = :right
+          cells[0, 11].borders = [:top, :bottom, :right, :left]
+          cells[0, 11].align = :right
+          cells[0, 12].borders = [:top, :bottom, :right, :left]
+          cells[0, 12].align = :right
+          cells[0, 13].borders = [:top, :bottom, :right, :left]
+          cells[0, 13].align = :right
+          cells[0, 14].borders = [:top, :bottom, :right, :left]
+          cells[0, 14].align = :right
+          cells[0, 15].borders = [:top, :bottom, :right, :left]
+          cells[0, 15].align = :right          
+        end  
+      end
+
+    else
+      table_head = [["No data available"]]
+      pdf.table table_head, :column_widths => { 0 => 590}, :cell_style => { :size => 12 } do
+        cells[0, 0].borders = []
+        cells[0, 0].align = :center
+      end         
+  
+    end
+
+    path = "#{Rails.root}/public/monthly_employee_utilization_report.pdf"
+    pdf.render_file path
+    path
+    @user1={:email=> "pari.muthusamy@altiussolution.com"}
+    #@user2={:email=> "ishwarya@altiussolution.com"}
+    #@user3={:email=> "malathi.sriram@altiussolution.com"}
+    @user2={:email=> "poombavai.sivamani@altiussolution.com"}
+    #@user2={:email=> "manikandan.rajamanickam@adcltech.com"}
+    ProjectbaseMailer.report(@user2,path,type="monthly").deliver
+    ProjectbaseMailer.report(@user1,path,type="monthly").deliver
+  end
+
+end

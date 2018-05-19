@@ -1,0 +1,10 @@
+
+<center><h3>Editing Client</h3></center>
+
+<div style="float: right; margin: 5px 65px;">
+
+<%= link_to 'Show', @client ,:class=>"btn btn-danger" %>
+<%= link_to 'Back', client_path ,:class=>"btn btn-success" %>
+
+</div>
+<%= render 'form', client: @client %>

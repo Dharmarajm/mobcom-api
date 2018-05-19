@@ -1,0 +1,12 @@
+
+<center><h3>New Project</h3></center>
+
+<div style="float: right; margin: 5px 65px;">
+
+<%= link_to 'Back', projects_path ,:class=>"btn btn-danger"%>
+
+</div>
+
+<%= render 'form', project: @project %>
+
+

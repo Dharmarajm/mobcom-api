@@ -1,0 +1,42 @@
+  
+   <% if @data == "1" %>
+
+<!--    <div class="new_password">
+
+         <!%=form_for "change password",:url=>{:controller=>"users",:action=>"change_password_update"} do |i| %>
+         
+
+          <div class="row">
+          <div class="col-md-6 form-group"><label for="newpassword">New Password</label>
+           <!%=i.password_field :password ,:placeholder=>"Password",:id=>"password" ,required:true ,class:"form-control"%>
+          </div>
+
+          <div class="col-md-6 form-group"><label for="conpassword">Confirm Password</label><input type="password" placeholder="Confirm Password" id="confirm_password" required class="form-control">
+          </div>
+          </div>
+
+         <!%=i.submit "Save" , class: "btn btn-primary btn-one", style: "float:right" %>
+        <!%end%>
+</div>
+ -->
+          <% elsif @data == "0" %>
+
+<div class="error_password" style="color:red;">Password Incorrect</div>
+<% end %>
+
+<script type="text/javascript">
+  var password = document.getElementById("password")
+  , confirm_password = document.getElementById("confirm_password");
+
+function validatePassword(){
+  if(password.value != confirm_password.value) {
+    confirm_password.setCustomValidity("Passwords Don't Match");
+  } else {
+    confirm_password.setCustomValidity('');
+  }
+}
+
+password.onchange = validatePassword;
+confirm_password.onkeyup = validatePassword;
+
+</script>

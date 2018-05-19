@@ -1,0 +1,84 @@
+<div class="container">
+<div class="row">
+  <center><h3>Employee Details</h3></center>
+</div>
+<div style="float: right">
+  <%= link_to  'Edit', edit_employee_path(@employee) ,:class=>"btn btn-success" %>  
+  <%= link_to 'Back', employees_path,:class=>"btn btn-danger" %>
+</div>
+<div class="row col-md-12  box">
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr">First Name </div>
+      <div>&nbsp;<%= @employee.first_name %></div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="fontcolr">Last Name </div>
+      <div>&nbsp;<%= @employee.last_name %></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">  
+      <div class="fontcolr">Email </div>
+      <div>&nbsp;<%= @employee.email %></div>
+    </div>
+
+    <div class="col-md-6">  
+      <div class="fontcolr">Mobile Number </div>
+      <div>&nbsp;<%= @employee.mobile_number %></div>
+    </div>
+  </div>
+    
+  <div class="row">
+    <div class="col-md-6">  
+      <div class="fontcolr">Employee Id </div>
+      <div>&nbsp;<%= @employee.employee_id %></div>
+    </div>
+    <div class="col-md-6">  
+      <div class="fontcolr">Date Of Birth </div>
+      <div>&nbsp;<%= @employee.date_of_birth%></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr">Designation</div>
+      <div>&nbsp;<%= @employee.designation%></div>
+    </div>
+    <div class="col-md-6">
+      <div class="fontcolr">CTC</div>
+      <div>&nbsp;<%= @employee.ctc%></div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr">Street</div>
+      <div>&nbsp;<%= @employee.street %></div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="fontcolr"> Pin Code </div>
+      <div>&nbsp;<%= @employee.pincode %></div>
+    </div>
+  </div>  
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr">City </div>
+      <div>&nbsp;<%= @employee.city %></div>
+    </div>
+    <div class="col-md-6">
+      <div class="fontcolr"> State</div>
+      <div>&nbsp;<%= @employee.state %></div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="fontcolr">Country </div>
+      <div>&nbsp;<%= @employee.country %></div>
+    </div>
+  </div>
+</div>
+</div>

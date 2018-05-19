@@ -1,0 +1,15 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  from_employee_id: 1
+  to_employee_id: 1
+  to_contact_id: 1
+  start_time: MyString
+  end_time: MyString
+
+two:
+  from_employee_id: 1
+  to_employee_id: 1
+  to_contact_id: 1
+  start_time: MyString
+  end_time: MyString
